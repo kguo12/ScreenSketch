@@ -2,6 +2,8 @@
 
 ScreenSketch is a lightweight macOS screen-annotation app. Quickly open and close to sketch quick math, drawings, write, or anything else you need to put pen to "paper" for.
 
+It was designed by me because I needed a tool to help me sketch out ideas during research meetings with my collaborators, and I am a very particular human about these things.
+
 ## Features
 
 - Pencil with color, width, and transparency controls
