@@ -1,6 +1,8 @@
 # ScreenSketch
 
-ScreenSketch is a lightweight macOS screen-annotation app. It creates transparent drawing surfaces across all connected displays while keeping its control window clickable.
+ScreenSketch is a lightweight macOS screen-annotation app. Quickly open and close to sketch quick math, drawings, write, or anything else you need to put pen to "paper" for.
+
+It was designed by me because I needed a tool to help me sketch out ideas during research meetings with my collaborators, and I am a very particular human about these things.
 
 ## Features
 
@@ -9,7 +11,7 @@ ScreenSketch is a lightweight macOS screen-annotation app. It creates transparen
 - Lasso selection with move, copy, cut, paste, and delete
 - Independent drawings on every connected display
 - Click-through Pointer mode
-- Sidecar-compatible mouse-style input
+- Sidecar-compatible, works with Apple Pencil on iPad
 
 ## Shortcuts
 
@@ -26,7 +28,3 @@ git clone <repository-url>
 cd ScreenSketch
 ./scripts/build-app.sh
 ```
-
-The standalone app is written to `dist/ScreenSketch.app`. It is ad-hoc signed for local use. You can also open `Package.swift` in Xcode and run the `ScreenSketch` scheme on My Mac.
-
-Sidecar support depends on the events macOS exposes to the Mac. Pressure-sensitive Apple Pencil data is not currently handled.
