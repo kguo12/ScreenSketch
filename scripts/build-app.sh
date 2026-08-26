@@ -13,7 +13,7 @@ xcrun swiftc \
     -module-cache-path "$ROOT_DIR/.build/module-cache" \
     -target "$MACOS_TARGET" \
     -o "$APP_DIR/Contents/MacOS/ScreenSketch" \
-    "$ROOT_DIR"/Sources/ScreenAnnotator/*.swift
+    "$ROOT_DIR"/Sources/ScreenSketch/*.swift
 
 cp "$ROOT_DIR/packaging/Info.plist" "$APP_DIR/Contents/Info.plist"
 codesign --force --deep --sign - "$APP_DIR"

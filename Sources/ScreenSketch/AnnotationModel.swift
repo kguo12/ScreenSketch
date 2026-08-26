@@ -189,6 +189,7 @@ final class AnnotationModel: ObservableObject {
 
     func copySelection() {
         clipboardStrokes = strokes.filter { selectedStrokeIDs.contains($0.id) }
+        copySelectionImageToPasteboard()
         canPaste = false
         pasteLocation = nil
         pasteDisplayID = nil
@@ -342,6 +343,60 @@ final class AnnotationModel: ObservableObject {
               let minY = points.map(\.y).min(),
               let maxY = points.map(\.y).max() else { return nil }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    private func copySelectionImageToPasteboard() {
+        let selectedStrokes = strokes.filter { selectedStrokeIDs.contains($0.id) }
+        guard !selectedStrokes.isEmpty,
+              let displayID = selectedDisplayID,
+              let rawBounds = selectedBounds() else { return }
+
+        let padding = (selectedStrokes.map(\.width).max() ?? 1) / 2 + 4
+        let bounds = rawBounds.insetBy(dx: -padding, dy: -padding)
+        let scale = NSScreen.screens
+            .first { Self.displayID(for: $0) == displayID }?
+            .backingScaleFactor ?? 2
+        let pixelWidth = Int(ceil(bounds.width * scale))
+        let pixelHeight = Int(ceil(bounds.height * scale))
+        guard pixelWidth > 0, pixelHeight > 0,
+              pixelWidth <= 32_768, pixelHeight <= 32_768,
+              let context = CGContext(
+                data: nil,
+                width: pixelWidth,
+                height: pixelHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else { return }
+
+        context.clear(CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight))
+        context.scaleBy(x: scale, y: scale)
+        context.translateBy(x: -bounds.minX, y: -bounds.minY)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+
+        for stroke in selectedStrokes where stroke.points.count > 1 {
+            let color = NSColor(stroke.color).usingColorSpace(.deviceRGB) ?? NSColor(stroke.color)
+            context.setStrokeColor(color.withAlphaComponent(stroke.opacity).cgColor)
+            context.setLineWidth(stroke.width)
+            context.beginPath()
+            context.move(to: stroke.points[0])
+            for point in stroke.points.dropFirst() { context.addLine(to: point) }
+            context.strokePath()
+        }
+
+        guard let image = context.makeImage() else { return }
+        let representation = NSBitmapImageRep(cgImage: image)
+        representation.size = bounds.size
+        guard let pngData = representation.representation(using: .png, properties: [:]),
+              let tiffData = representation.representation(using: .tiff, properties: [:]) else { return }
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.declareTypes([.png, .tiff], owner: nil)
+        pasteboard.setData(pngData, forType: .png)
+        pasteboard.setData(tiffData, forType: .tiff)
     }
 
     private func showPasteActionPopup(at location: CGPoint, on displayID: CGDirectDisplayID) {

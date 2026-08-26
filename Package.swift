@@ -5,5 +5,5 @@ let package = Package(
     name: "ScreenSketch",
     platforms: [.macOS(.v13)],
     products: [.executable(name: "ScreenSketch", targets: ["ScreenSketch"])],
-    targets: [.executableTarget(name: "ScreenSketch", path: "Sources/ScreenAnnotator")]
+    targets: [.executableTarget(name: "ScreenSketch", path: "Sources/ScreenSketch")]
 )

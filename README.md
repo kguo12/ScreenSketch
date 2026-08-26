@@ -9,6 +9,7 @@ It was designed by me because I needed a tool to help me sketch out ideas during
 - Pencil with color, width, and transparency controls
 - Partial-stroke eraser with adjustable size
 - Lasso selection with move, copy, cut, paste, and delete
+- Copy selected drawings as transparent images for pasting into other apps
 - Independent drawings on every connected display
 - Click-through Pointer mode
 - Sidecar-compatible, works with Apple Pencil on iPad

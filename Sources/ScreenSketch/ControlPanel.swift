@@ -49,7 +49,7 @@ struct ControlPanel: View {
         case .pointer: return "Use your mouse as normal."
         case .pencil: return "Drag and draw on any connected display."
         case .eraser: return "Drag over drawing to erase it."
-        case .select: return "Draw a loop to select, then drag the highlighted region to move it."
+        case .select: return "Lasso and move drawings. Copy also creates a transparent clipboard image."
         }
     }
 }
@@ -86,6 +86,9 @@ private final class ControlWindowLevelView: NSView {
             behavior.insert(.fullScreenAuxiliary)
             window.collectionBehavior = behavior
             self?.model?.registerControlWindow(window)
+            let colorPanel = NSColorPanel.shared
+            colorPanel.level = .popUpMenu
+            colorPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             if let closeButton = window.standardWindowButton(.closeButton) {
                 closeButton.target = self
                 closeButton.action = #selector(ControlWindowLevelView.hideFromCloseButton)
