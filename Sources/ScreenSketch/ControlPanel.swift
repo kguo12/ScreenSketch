@@ -34,6 +34,7 @@ struct ControlPanel: View {
                 Text("⇧⌘D  Open / Close ScreenSketch")
                 Text("⇧⌘F  Clear all drawings")
                 Text("⇧⌘Space  Undo last drawing")
+                Text("⌘C / ⌘X / ⌘V / ⌘⌫  Selection actions")
             }
             .font(.caption2.monospaced())
             .foregroundStyle(.secondary)

@@ -55,6 +55,10 @@ final class AnnotationModel: ObservableObject {
         globalHotKey?.onToggle = { [weak self] in self?.toggleApplicationVisibility() }
         globalHotKey?.onClear = { [weak self] in self?.clear() }
         globalHotKey?.onUndo = { [weak self] in self?.undo() }
+        globalHotKey?.onCopy = { [weak self] in self?.copySelection() }
+        globalHotKey?.onCut = { [weak self] in self?.cutSelection() }
+        globalHotKey?.onPaste = { [weak self] in self?.paste() }
+        globalHotKey?.onDelete = { [weak self] in self?.deleteSelection() }
 
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -95,6 +99,7 @@ final class AnnotationModel: ObservableObject {
 
     func hideApplication() {
         isApplicationPresented = false
+        refreshEditingShortcuts()
         controlWindow?.orderOut(nil)
         overlays.values.forEach { $0.orderOut(nil) }
         dismissActionPopup()
@@ -107,6 +112,7 @@ final class AnnotationModel: ObservableObject {
         if controlWindow.isMiniaturized { controlWindow.deminiaturize(nil) }
         controlWindow.makeKeyAndOrderFront(nil)
         if isOverlayVisible { showOverlay() }
+        refreshEditingShortcuts()
     }
 
     func toggleOverlay() {
@@ -117,6 +123,7 @@ final class AnnotationModel: ObservableObject {
             overlays.values.forEach { $0.orderOut(nil) }
             dismissActionPopup()
         }
+        refreshEditingShortcuts()
     }
 
     func showOverlay() {
@@ -170,6 +177,7 @@ final class AnnotationModel: ObservableObject {
             }
             self.overlays.values.forEach { $0.ignoresMouseEvents = self.tool == .pointer }
             if self.tool != .select { self.dismissActionPopup() }
+            self.refreshEditingShortcuts()
         }
     }
 
@@ -185,6 +193,7 @@ final class AnnotationModel: ObservableObject {
         pasteDisplayID = nil
         redrawOverlays()
         showSelectionActionPopup()
+        refreshEditingShortcuts()
     }
 
     func copySelection() {
@@ -194,6 +203,7 @@ final class AnnotationModel: ObservableObject {
         pasteLocation = nil
         pasteDisplayID = nil
         dismissActionPopup()
+        refreshEditingShortcuts()
     }
 
     func cutSelection() {
@@ -203,6 +213,7 @@ final class AnnotationModel: ObservableObject {
         selectedDisplayID = nil
         dismissActionPopup()
         redrawOverlays()
+        refreshEditingShortcuts()
     }
 
     func deleteSelection() {
@@ -214,6 +225,7 @@ final class AnnotationModel: ObservableObject {
         pasteDisplayID = nil
         dismissActionPopup()
         redrawOverlays()
+        refreshEditingShortcuts()
     }
 
     func armPaste(at location: CGPoint, on displayID: CGDirectDisplayID) {
@@ -224,6 +236,7 @@ final class AnnotationModel: ObservableObject {
         canPaste = pasteLocation != nil
         redrawOverlays()
         if canPaste { showPasteActionPopup(at: location, on: displayID) }
+        refreshEditingShortcuts()
     }
 
     func paste() {
@@ -253,6 +266,7 @@ final class AnnotationModel: ObservableObject {
         canPaste = false
         redrawOverlays()
         showSelectionActionPopup()
+        refreshEditingShortcuts()
     }
 
     func selectionContains(_ point: CGPoint, on displayID: CGDirectDisplayID) -> Bool {
@@ -315,6 +329,7 @@ final class AnnotationModel: ObservableObject {
         selectedDisplayID = nil
         dismissActionPopup()
         redrawOverlays()
+        refreshEditingShortcuts()
     }
 
     func clear() {
@@ -326,6 +341,7 @@ final class AnnotationModel: ObservableObject {
         pasteDisplayID = nil
         dismissActionPopup()
         redrawOverlays()
+        refreshEditingShortcuts()
     }
 
     func undo() {
@@ -334,6 +350,7 @@ final class AnnotationModel: ObservableObject {
         selectedDisplayID = nil
         dismissActionPopup()
         redrawOverlays()
+        refreshEditingShortcuts()
     }
 
     private func selectedBounds() -> CGRect? {
@@ -439,9 +456,21 @@ final class AnnotationModel: ObservableObject {
         overlays.values.forEach { $0.contentView?.needsDisplay = true }
     }
 
+    private func refreshEditingShortcuts() {
+        let selectModeIsActive = !isTerminating
+            && isApplicationPresented
+            && isOverlayVisible
+            && tool == .select
+        globalHotKey?.setEditingShortcuts(
+            copyCutDeleteEnabled: selectModeIsActive && hasSelection,
+            pasteEnabled: selectModeIsActive && canPaste
+        )
+    }
+
     private func prepareForTermination() {
         isTerminating = true
         isApplicationPresented = false
+        refreshEditingShortcuts()
         actionPanel?.orderOut(nil)
         overlays.values.forEach { $0.orderOut(nil) }
     }

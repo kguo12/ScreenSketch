@@ -19,6 +19,10 @@ It was designed by me because I needed a tool to help me sketch out ideas during
 - `Shift-Command-D`: show or hide ScreenSketch
 - `Shift-Command-F`: clear all drawings
 - `Shift-Command-Space`: undo the most recent drawing
+- `Command-C`: copy the current selection
+- `Command-X`: cut the current selection
+- `Command-V`: paste at the selected destination
+- `Command-Backspace`: delete the current selection
 
 ## Build
 

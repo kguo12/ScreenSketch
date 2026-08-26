@@ -4,10 +4,18 @@ final class GlobalHotKey {
     var onToggle: (() -> Void)?
     var onClear: (() -> Void)?
     var onUndo: (() -> Void)?
+    var onCopy: (() -> Void)?
+    var onCut: (() -> Void)?
+    var onPaste: (() -> Void)?
+    var onDelete: (() -> Void)?
 
     private var toggleHotKeyRef: EventHotKeyRef?
     private var clearHotKeyRef: EventHotKeyRef?
     private var undoHotKeyRef: EventHotKeyRef?
+    private var copyHotKeyRef: EventHotKeyRef?
+    private var cutHotKeyRef: EventHotKeyRef?
+    private var pasteHotKeyRef: EventHotKeyRef?
+    private var deleteHotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
 
     init() {
@@ -46,6 +54,10 @@ final class GlobalHotKey {
                     case 1: hotKeys.onToggle?()
                     case 2: hotKeys.onClear?()
                     case 3: hotKeys.onUndo?()
+                    case 4: hotKeys.onCopy?()
+                    case 5: hotKeys.onCut?()
+                    case 6: hotKeys.onPaste?()
+                    case 7: hotKeys.onDelete?()
                     default: break
                     }
                 }
@@ -88,10 +100,51 @@ final class GlobalHotKey {
         )
     }
 
+    func setEditingShortcuts(copyCutDeleteEnabled: Bool, pasteEnabled: Bool) {
+        if copyCutDeleteEnabled {
+            if copyHotKeyRef == nil { copyHotKeyRef = registerHotKey(keyCode: UInt32(kVK_ANSI_C), id: 4) }
+            if cutHotKeyRef == nil { cutHotKeyRef = registerHotKey(keyCode: UInt32(kVK_ANSI_X), id: 5) }
+            if deleteHotKeyRef == nil { deleteHotKeyRef = registerHotKey(keyCode: UInt32(kVK_Delete), id: 7) }
+        } else {
+            Self.unregister(&copyHotKeyRef)
+            Self.unregister(&cutHotKeyRef)
+            Self.unregister(&deleteHotKeyRef)
+        }
+
+        if pasteEnabled {
+            if pasteHotKeyRef == nil { pasteHotKeyRef = registerHotKey(keyCode: UInt32(kVK_ANSI_V), id: 6) }
+        } else {
+            Self.unregister(&pasteHotKeyRef)
+        }
+    }
+
+    private func registerHotKey(keyCode: UInt32, id: UInt32) -> EventHotKeyRef? {
+        var reference: EventHotKeyRef?
+        let identifier = EventHotKeyID(signature: 0x534B4554, id: id)
+        let result = RegisterEventHotKey(
+            keyCode,
+            UInt32(cmdKey),
+            identifier,
+            GetApplicationEventTarget(),
+            0,
+            &reference
+        )
+        return result == noErr ? reference : nil
+    }
+
+    private static func unregister(_ reference: inout EventHotKeyRef?) {
+        if let reference { UnregisterEventHotKey(reference) }
+        reference = nil
+    }
+
     deinit {
         if let toggleHotKeyRef { UnregisterEventHotKey(toggleHotKeyRef) }
         if let clearHotKeyRef { UnregisterEventHotKey(clearHotKeyRef) }
         if let undoHotKeyRef { UnregisterEventHotKey(undoHotKeyRef) }
+        Self.unregister(&copyHotKeyRef)
+        Self.unregister(&cutHotKeyRef)
+        Self.unregister(&pasteHotKeyRef)
+        Self.unregister(&deleteHotKeyRef)
         if let eventHandlerRef { RemoveEventHandler(eventHandlerRef) }
     }
 }
