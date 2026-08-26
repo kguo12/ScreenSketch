@@ -39,10 +39,13 @@ final class AnnotationModel: ObservableObject {
     private weak var controlWindow: NSWindow?
     private var globalHotKey: GlobalHotKey?
     private var screenObserver: NSObjectProtocol?
+    private var terminationObserver: NSObjectProtocol?
     private var clipboardStrokes: [Stroke] = []
     private var pasteLocation: CGPoint?
     private var pasteDisplayID: CGDirectDisplayID?
     private var selectedDisplayID: CGDirectDisplayID?
+    private var isApplicationPresented = true
+    private var isTerminating = false
 
     var hasSelection: Bool { !selectedStrokeIDs.isEmpty }
     var hasClipboard: Bool { !clipboardStrokes.isEmpty }
@@ -59,14 +62,23 @@ final class AnnotationModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             DispatchQueue.main.async { [weak self] in
-                guard let self, self.isOverlayVisible else { return }
+                guard let self, self.isApplicationPresented, self.isOverlayVisible else { return }
                 self.showOverlay()
             }
+        }
+
+        terminationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.prepareForTermination()
         }
     }
 
     deinit {
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
+        if let terminationObserver { NotificationCenter.default.removeObserver(terminationObserver) }
     }
 
     func registerControlWindow(_ window: NSWindow) {
@@ -74,21 +86,27 @@ final class AnnotationModel: ObservableObject {
     }
 
     func toggleApplicationVisibility() {
-        guard let controlWindow else { return }
-        if controlWindow.isVisible, !controlWindow.isMiniaturized {
+        if isApplicationPresented, controlWindow?.isMiniaturized != true {
             hideApplication()
         } else {
-            NSApp.activate(ignoringOtherApps: true)
-            if controlWindow.isMiniaturized { controlWindow.deminiaturize(nil) }
-            controlWindow.makeKeyAndOrderFront(nil)
-            if isOverlayVisible { showOverlay() }
+            showApplication()
         }
     }
 
     func hideApplication() {
+        isApplicationPresented = false
         controlWindow?.orderOut(nil)
         overlays.values.forEach { $0.orderOut(nil) }
         dismissActionPopup()
+    }
+
+    private func showApplication() {
+        guard let controlWindow else { return }
+        isApplicationPresented = true
+        NSApp.activate(ignoringOtherApps: true)
+        if controlWindow.isMiniaturized { controlWindow.deminiaturize(nil) }
+        controlWindow.makeKeyAndOrderFront(nil)
+        if isOverlayVisible { showOverlay() }
     }
 
     func toggleOverlay() {
@@ -102,6 +120,7 @@ final class AnnotationModel: ObservableObject {
     }
 
     func showOverlay() {
+        guard !isTerminating, isApplicationPresented, isOverlayVisible else { return }
         let screensByID = Dictionary(
             uniqueKeysWithValues: NSScreen.screens.map { (Self.displayID(for: $0), $0) }
         )
@@ -363,6 +382,13 @@ final class AnnotationModel: ObservableObject {
 
     private func redrawOverlays() {
         overlays.values.forEach { $0.contentView?.needsDisplay = true }
+    }
+
+    private func prepareForTermination() {
+        isTerminating = true
+        isApplicationPresented = false
+        actionPanel?.orderOut(nil)
+        overlays.values.forEach { $0.orderOut(nil) }
     }
 
     private static func displayID(for screen: NSScreen) -> CGDirectDisplayID {
